@@ -480,11 +480,12 @@ struct MavLinkDroneController::impl {
 
 		mavlinkcom::MavLinkAttitude att;
 		att.pitch = p;
-		att.pitchspeed = gyro.x;
+		att.pitchspeed = gyro.x();
 		att.roll = r;
-		att.rollspeed = gyro.y;
+		att.rollspeed = gyro.y();
 		att.yaw = y;
-		att.yawspeed = gyro.z;
+		att.yawspeed = gyro.z();
+		att.time_boot_ms = static_cast<uint32_t>(Utils::getTimeSinceEpochMillis() * 1000);
 
 		if (hil_node_ != nullptr) {
 			hil_node_->sendMessage(att);
