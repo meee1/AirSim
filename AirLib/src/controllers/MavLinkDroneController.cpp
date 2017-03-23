@@ -470,6 +470,31 @@ struct MavLinkDroneController::impl {
         last_gps_message_ = hil_gps;
     }
 
+	void sendATTSensor(const Quaternionr& orientation , const Vector3r& gyro)
+	{
+		if (!is_simulation_mode_)
+			throw std::logic_error("Attempt to send simulated ATT messages while not in simulation mode");
+
+		real_T r, p, y;
+		VectorMath::toEulerianAngle(orientation, p, r, y);
+
+		mavlinkcom::MavLinkAttitude att;
+		att.pitch = p;
+		att.pitchspeed = gyro.x;
+		att.roll = r;
+		att.rollspeed = gyro.y;
+		att.yaw = y;
+		att.yawspeed = gyro.z;
+
+		if (hil_node_ != nullptr) {
+			hil_node_->sendMessage(att);
+		}
+
+		if (logviewer_proxy_ != nullptr) {
+			logviewer_proxy_->sendMessage(att);
+		}
+	}
+
     real_T getVertexControlSignal(unsigned int rotor_index)
     {
         if (!is_simulation_mode_)
@@ -536,6 +561,8 @@ struct MavLinkDroneController::impl {
             mag_output.magnetic_field_body,
             baro_output.pressure * 0.01f /*Pa to Milibar */, baro_output.altitude);
 
+		sendATTSensor(imu_output.orientation, imu_output.angular_velocity);
+		
         const auto gps = getGps();
         if (gps != nullptr) {
             const auto& gps_output = gps->getOutput();
